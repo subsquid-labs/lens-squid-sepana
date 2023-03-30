@@ -1,0 +1,32 @@
+type Profile @entity {
+  id: ID!
+  address: String @index
+  handle: String @index
+  imageURI: String
+  profileId: Int!
+  posts: [Post!] @derivedFrom(field: "creatorProfile")
+  comments: [Comment!] @derivedFrom(field: "profile")
+  timestamp: DateTime! @index
+}
+
+type Post @entity {
+  id: ID!
+  contentURI: String
+  postId: Int!
+  profileId: Int!
+  creatorProfile: Profile! @index
+  timestamp: DateTime! @index
+}
+
+type Comment @entity {
+  id: ID!
+  contentURI: String!
+  commentId: Int!
+  profileId: Int!
+  profile: Profile! @index
+  originalPostId: Int!
+  originalPost: Post!
+  originalProfileId: Int!
+  originalProfile: Profile! @index
+  timestamp: DateTime! @index
+}
