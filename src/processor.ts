@@ -6,8 +6,14 @@ import {Profile, Post, Comment} from './model'
 import {In} from 'typeorm'
 import {SepanaClient} from './sepana'
 import {HttpClient} from '@subsquid/util-internal-http-client'
+import assert  from 'assert'
 
 const lensContractAddress = '0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d'.toLowerCase()
+
+assert(process.env.SEPANA_API_KEY, 'SEPANA_API_KEY env varibale must be set')
+assert(process.env.SEPANA_ENGINE_ID, 'SEPANA_ENGINE_ID env variable must be set')
+
+const engineID = process.env.SEPANA_ENGINE_ID
 
 const processor = new EvmBatchProcessor()
     .setDataSource({
@@ -315,7 +321,7 @@ async function indexLensData(
     )
     ctx.log.debug(`Saving metadata for ${data.posts.length} posts...`)
     await sepanaClient.insert(
-        'dea472ac-fcdb-4edd-979b-fa5f7832aab7',
+        engineID,
         postsMetadata.filter((m) => m != null)
     )
 
@@ -331,7 +337,7 @@ async function indexLensData(
     )
     ctx.log.debug(`Saving metadata for ${data.posts.length} comments...`)
     await sepanaClient.insert(
-        'dea472ac-fcdb-4edd-979b-fa5f7832aab7',
+        engineID,
         commentsMetadata.filter((m) => m != null)
     )
 }

@@ -1,9 +1,12 @@
 manifestVersion: subsquid.io/v0.1
 name: lens-squid-sepana
 version: 1
-description: 'The very first evm squid from manifest  '
+description: 'Squid indexing Lens protocol posts and comments and stores into the Sepana Web3 search engine'
 build: 
 deploy:
+  secrets:
+    - SEPANA_API_KEY
+    - SEPANA_ENGINE_ID
   addons:
     postgres: 
   processor:
