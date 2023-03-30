@@ -6,7 +6,7 @@ import {Profile, Post, Comment} from './model'
 import {In} from 'typeorm'
 import {SepanaClient} from './sepana'
 import {HttpClient} from '@subsquid/util-internal-http-client'
-import assert  from 'assert'
+import assert from 'assert'
 
 const lensContractAddress = '0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d'.toLowerCase()
 
@@ -315,7 +315,16 @@ async function indexLensData(
             if (p.contentURI == null) {
                 return undefined
             } else {
-                return await fetchMetadata(p.contentURI)
+                let data = await fetchMetadata(p.contentURI)
+
+                if (data != null) {
+                    return {
+                        _id: p.id,
+                        ...data,
+                    }
+                } else {
+                    return undefined
+                }
             }
         })
     )
@@ -331,7 +340,16 @@ async function indexLensData(
             if (c.contentURI == null) {
                 return undefined
             } else {
-                return await fetchMetadata(c.contentURI)
+                let data = await fetchMetadata(c.contentURI)
+
+                if (data != null) {
+                    return {
+                        _id: c.id,
+                        ...data,
+                    }
+                } else {
+                    return undefined
+                }
             }
         })
     )
