@@ -310,50 +310,16 @@ async function indexLensData(
     }
 ) {
     ctx.log.debug(`Fetching metadata for ${data.posts.length} posts...`)
-    let postsMetadata = await Promise.all(
-        data.posts.map(async (p) => {
-            if (p.contentURI == null) {
-                return undefined
-            } else {
-                let data = await fetchMetadata(p.contentURI)
-
-                if (data != null) {
-                    return {
-                        _id: p.id,
-                        ...data,
-                    }
-                } else {
-                    return undefined
-                }
-            }
-        })
-    )
+    let postsMetadata = await fetchMetadata(data.posts)
     ctx.log.debug(`Saving metadata for ${data.posts.length} posts...`)
     await sepanaClient.insert(
         engineID,
         postsMetadata.filter((m) => m != null)
     )
 
-    ctx.log.debug(`Fetching metadata for ${data.posts.length} comments...`)
-    let commentsMetadata = await Promise.all(
-        data.comments.map(async (c) => {
-            if (c.contentURI == null) {
-                return undefined
-            } else {
-                let data = await fetchMetadata(c.contentURI)
-
-                if (data != null) {
-                    return {
-                        _id: c.id,
-                        ...data,
-                    }
-                } else {
-                    return undefined
-                }
-            }
-        })
-    )
-    ctx.log.debug(`Saving metadata for ${data.posts.length} comments...`)
+    ctx.log.debug(`Fetching metadata for ${data.comments.length} comments...`)
+    let commentsMetadata = await fetchMetadata(data.comments)
+    ctx.log.debug(`Saving metadata for ${data.comments.length} comments...`)
     await sepanaClient.insert(
         engineID,
         commentsMetadata.filter((m) => m != null)
@@ -375,19 +341,44 @@ const httpClient = new HttpClient({
 
 const ipfsRegExp = /^ipfs:\/\/(.+)$/
 
-async function fetchMetadata(url: string) {
-    if (url.startsWith('ipfs://')) {
-        return await ipfsClient.get('ipfs/' + ipfsRegExp.exec(url)![1])
-    } else if (url.startsWith('/ipfs')) {
-        return await ipfsClient.get(url)
-    } else if (url.startsWith('http://') || url.startsWith('https://')) {
-        if (url.includes('ipfs/')) {
-            let parsed = new URL(url)
-            return await ipfsClient.get(parsed.pathname)
-        } else {
-            return await httpClient.get(url).catch(() => undefined)
-        }
-    } else {
-        throw new Error(`Unexpected url "${url}"`)
+const IPFS_BATCH_SIZE = 500
+
+async function fetchMetadata(items: {id: string; contentURI: string | undefined | null}[]) {
+    let itemsMetadata: any[] = []
+    for (let i = 0; i < items.length; i += IPFS_BATCH_SIZE) {
+        let res = await Promise.all(
+            items.slice(i, IPFS_BATCH_SIZE).map(async (p) => {
+                if (p.contentURI == null) {
+                    return undefined
+                } else {
+                    let url = p.contentURI
+                    let metadata: any
+                    if (url.startsWith('ipfs://')) {
+                        metadata = await ipfsClient.get('ipfs/' + ipfsRegExp.exec(url)![1])
+                    } else if (url.startsWith('/ipfs')) {
+                        metadata = await ipfsClient.get(url)
+                    } else if (url.startsWith('http://') || url.startsWith('https://')) {
+                        if (url.includes('ipfs/')) {
+                            let parsed = new URL(url)
+                            metadata = await ipfsClient.get(parsed.pathname)
+                        } else {
+                            metadata = await httpClient.get(url).catch(() => undefined)
+                        }
+                    } else {
+                        throw new Error(`Unexpected url "${url}"`)
+                    }
+
+                    return metadata == null
+                        ? undefined
+                        : {
+                              _id: p.id,
+                              ...metadata,
+                          }
+                }
+            })
+        )
+        itemsMetadata.push(...res)
     }
+
+    return itemsMetadata
 }
