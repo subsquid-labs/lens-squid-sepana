@@ -299,6 +299,7 @@ async function saveLensData(
 
 const sepanaClient = new SepanaClient({
     baseUrl: 'https://api.sepana.io',
+    retryAttempts: 5,
 })
 
 async function indexLensData(
@@ -331,12 +332,14 @@ const ipfsClient = new HttpClient({
     headers: {
         'content-type': 'application/json',
     },
+    retryAttempts: 5,
 })
 
 const httpClient = new HttpClient({
     headers: {
         'content-type': 'application/json',
     },
+    retryAttempts: 5,
 })
 
 const ipfsRegExp = /^ipfs:\/\/(.+)$/
