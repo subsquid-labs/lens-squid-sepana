@@ -341,14 +341,14 @@ const httpClient = new HttpClient({
 
 const ipfsRegExp = /^ipfs:\/\/(.+)$/
 
-const IPFS_BATCH_SIZE = 500
+const IPFS_BATCH_SIZE = 100
 
 async function fetchMetadata(items: {id: string; contentURI: string | undefined | null}[]) {
     let itemsMetadata: any[] = []
     for (let i = 0; i < items.length; i += IPFS_BATCH_SIZE) {
         let res = await Promise.all(
             items.slice(i, IPFS_BATCH_SIZE).map(async (p) => {
-                if (p.contentURI == null) {
+                if (!p.contentURI) {
                     return undefined
                 } else {
                     let url = p.contentURI
