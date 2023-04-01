@@ -6,7 +6,9 @@ import {Profile, Post, Comment} from './model'
 import {In} from 'typeorm'
 import {SepanaClient} from './sepana'
 import {HttpClient} from '@subsquid/util-internal-http-client'
+import {createLogger} from '@subsquid/logger'
 import assert from 'assert'
+
 
 const lensContractAddress = '0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d'.toLowerCase()
 
@@ -14,6 +16,7 @@ assert(process.env.SEPANA_API_KEY, 'SEPANA_API_KEY env varibale must be set')
 assert(process.env.SEPANA_ENGINE_ID, 'SEPANA_ENGINE_ID env variable must be set')
 
 const engineID = process.env.SEPANA_ENGINE_ID
+const log = createLogger('sqd:processor')
 
 const processor = new EvmBatchProcessor()
     .setDataSource({
@@ -353,11 +356,14 @@ async function fetchMetadata(items: {id: string; contentURI: string | undefined 
             items.slice(i, IPFS_BATCH_SIZE).map(async (p) => {
                 if (!p.contentURI) {
                     return undefined
-                } else {
-                    let url = p.contentURI
+                } 
+
+                let url = p.contentURI
+                try {
                     let metadata: any
                     if (url.startsWith('ipfs://')) {
-                        metadata = await ipfsClient.get('ipfs/' + ipfsRegExp.exec(url)![1])
+                        const ipfsHash = ipfsRegExp.exec(url)![1].replace("ipfs/", "")
+                        metadata = await ipfsClient.get('ipfs/' + ipfsHash)
                     } else if (url.startsWith('/ipfs')) {
                         metadata = await ipfsClient.get(url)
                     } else if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -376,10 +382,13 @@ async function fetchMetadata(items: {id: string; contentURI: string | undefined 
                     return metadata == null
                         ? undefined
                         : {
-                              _id: p.id,
-                              ...metadata,
-                          }
-                }
+                                _id: p.id,
+                                ...metadata,
+                            }
+                 } catch (e: any) {
+                    log.error(e, `Can't fetch ${url}`)
+                    return undefined
+                 }         
             })
         )
         itemsMetadata.push(...res)
