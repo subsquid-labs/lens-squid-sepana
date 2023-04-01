@@ -367,7 +367,7 @@ async function fetchMetadata(items: {id: string; contentURI: string | undefined 
                         } else {
                             metadata = await httpClient.get(url).catch(() => undefined)
                         }
-                    } else if (/[a-zA-Z0-9]/.test(url)) {
+                    } else if (/^[a-zA-Z0-9]+$/.test(url)) {
                         metadata = await ipfsClient.get('ipfs/' + url)
                     } else {
                         throw new Error(`Unexpected url "${url}"`)
